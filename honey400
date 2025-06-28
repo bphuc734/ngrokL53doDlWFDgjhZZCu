@@ -1,0 +1,90 @@
+getgenv().ConfigSpecial = {
+    ["Weight"] = 400,
+    ["Fruit"] = {"Honeysuckle"}
+}
+repeat
+    wait()
+until game:IsLoaded()
+repeat
+    wait()
+until game.Players.LocalPlayer.Character
+repeat
+    wait()
+    game:GetService("VirtualUser"):CaptureController()
+    game:GetService("VirtualUser"):Button1Down(Vector2.new(0, 0))
+until game.Players.LocalPlayer:GetAttribute("DataFullyLoaded") and
+    game.Players.LocalPlayer:GetAttribute("Finished_Loading")
+local getplace = (function()
+    local GetFarm = require(game.ReplicatedStorage.Modules.GetFarm)(game.Players.LocalPlayer)
+    return GetFarm
+end)
+local VirtualUser = game:service "VirtualUser"
+game:service("Players").LocalPlayer.Idled:connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+end)
+function check()
+    local cnt = 0
+    for i, v in game:GetService("Players").LocalPlayer.Backpack:GetChildren() do
+        if v:GetAttribute("ITEM_TYPE") == "Holdable" and not string.find(v.Name, "Pollinated") then
+            cnt = cnt + 1
+        end
+    end
+    for i, v in game:GetService("Players").LocalPlayer.Character:GetChildren() do
+        if v:GetAttribute("ITEM_TYPE") == "Holdable" and not string.find(v.Name, "Pollinated") then
+            cnt = cnt + 1
+        end
+    end
+    return cnt
+end
+spawn(function()
+    while wait() do
+        if (#game:GetService("Players").LocalPlayer.Backpack:GetChildren() >= 200 or
+            (game:GetService("Players").LocalPlayer.leaderstats.Sheckles.Value < 100 and check() > 1)) then
+            startsell = true
+
+            for i, v in
+                getconnections(game:GetService("Players").LocalPlayer.PlayerGui.Teleport_UI.Frame.Sell.Activated) do
+                v.Function()
+            end
+            task.wait(1)
+            game:GetService("ReplicatedStorage"):WaitForChild("GameEvents"):WaitForChild("Sell_Inventory"):FireServer()
+
+            task.wait(1)
+            startsell = false
+        end
+    end
+end)
+spawn(function()
+    pcall(function()
+        while wait() do
+            pcall(function()
+
+                local cnt = 0;
+
+                for i, v in getplace().Important.Plants_Physical:GetChildren() do
+                    if cnt < 200 then
+                        for i1, v1 in next, v:GetChildren() do
+                            if v1.Name == "Fruits" then
+                                for i2, v2 in v1:GetChildren() do
+                                    if v2.Weight.Value <= getgenv().ConfigSpecial["Weight"] and
+                                        table.find(getgenv().ConfigSpecial["Fruit"], v2.Name) then
+                                        task.wait(0.2)
+                                        local args = {buffer.fromstring("\001\001\000\001"), {v2}}
+                                        game:GetService("ReplicatedStorage"):WaitForChild("ByteNetReliable"):FireServer(
+                                            unpack(args))
+                                        cnt = cnt + 1
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        wait(2)
+                        break
+                    end
+
+                end
+            end)
+        end
+    end)
+end)
